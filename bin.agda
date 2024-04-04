@@ -18,7 +18,7 @@ b11 = ⟨⟩ I I
 
 postulate
   -- 1. Two representations of zeros are equal.
-  -- 2. Binaries with leading zeros are equal>
+  -- 2. Binaries that only differ in their leading zeros are equal.
   ⟨⟩O≡⟨⟩ : ⟨⟩ O ≡ ⟨⟩
 
 b11≡b011 : b11 ≡ b011
