@@ -1,7 +1,6 @@
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
 open import Data.Nat using (ℕ; _+_; zero; suc)
 open import Function using (_∘_)
-open import Data.Product using (_,_; _×_)
 
 data Bin : Set where
   ⟨⟩ : Bin
