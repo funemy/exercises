@@ -130,3 +130,20 @@ module HomoEq where
           (g : a ≡ b) → (h : a ≡ b) → g ≡ h
   uip'' {_} {A} {a} {b} g = J g (λ {x} p → (q : a ≡ x) → p ≡ q) (λ q → uip-refl refl q)
 
+
+module ML-≡ where
+  -- MLTT's original I
+  -- Comparing to HomoEq define above, both sides of the equality
+  -- are encoded as indices rather than parameters.
+  data _≡_ {A : Set} : A → A -> Set where
+    refl : (a : A) → a ≡ a
+
+  -- TODO: define J rule on this version
+  J : {ℓ : Level} → {A : Set} → {from to : A} →
+      (target : from ≡ to) →
+      (motive : {from to : A} → from ≡ to → Set ℓ) →
+      (base : motive (refl from)) →
+      motive target
+  -- TODO: define replace on this version of J
+
+

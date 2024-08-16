@@ -162,3 +162,21 @@ test2 = branch' [Right 1, Left 2] [plus1, plus1] [minus1]
 -- [\g -> either plus1 g Right 1, \g -> either plus1 g Right 1, \g -> either plus1 g Left 2, \g -> either plus1 g Left 2] <*> [minus1]
 -- [either plus1 minus1 Right 1, \g -> either plus1 minus1 Right 1, \g -> either plus1 minus1 Left 2, \g -> either plus1 minus1 Left 2]
 -- [0, 0, 3, 3]
+--
+
+newtype Const m a = Const {getConst :: m}
+
+instance Functor (Const m) where
+    fmap _ (Const x) = Const x
+
+instance Monoid m => Applicative (Const m) where
+    pure _ = Const mempty
+    Const x <*> Const y = Const $ x <> y
+
+data Validation e a = Failure e | Success a
+
+-- instance Monad (Validation e) where
+--   return = Success
+--   (Failure e) >>= _ = Failure e
+--   (Success a) >>= f = f a
+

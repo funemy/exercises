@@ -2,7 +2,7 @@
 module K where
 
 open import Agda.Primitive
-open import Relation.Binary.PropositionalEquality
+open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 
 private
   variable

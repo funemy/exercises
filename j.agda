@@ -24,6 +24,7 @@ module J where
       → motive a b target
   J {_} {_} {a} {b} refl motive base = base a
 
+
   JBasedSort : Setω
   JBasedSort = {ℓj ℓm : Level} → {A : Set ℓj} → {a : A} → {b : A}
       → (target : a ≡ b)
