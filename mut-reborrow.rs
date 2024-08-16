@@ -104,6 +104,9 @@ fn insert<'a,'b>(mut l : &'a mut List<&'b mut i32>, mut n : &'b mut i32) {
 // So potentially we can leak tmp out of `insert0`, then some integers
 // might have more than one mutable reference, which is exactly what Rust
 // wants to avoid!
+//
+// But specifically for this program, I think it is safe, but the type system
+// is overly constrained, unfortunately :(.
 
 fn main() {
     let mut y = 42;
