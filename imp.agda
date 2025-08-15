@@ -147,40 +147,89 @@ B⟦ land b₁ b₂ ⟧ s = vand (B⟦ b₁ ⟧ s) (B⟦ b₂ ⟧ s)
 --  seq : Stm → Stm → Stm
 --  ite : Bexp → Stm → Stm → Stm
 --  whiledo : Bexp → Stm → Stm
-data [_,_]⟶_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
+data [_,_]⇓_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
     s-assign :
         { s : Heap } →
         { x : SSymbol } →
         { aexp : Aexp } →
         let s' = M.map (λ v → s [ x := v ]) (A⟦ aexp ⟧ s) in
     ----------------------------------------------------------
-        [ assign x aexp , s ]⟶ s'
+        [ assign x aexp , s ]⇓ s'
 
     s-skip :
         { s : Heap } →
     ----------------------------------------------------------
-        [ skip , s ]⟶ just s
+        [ skip , s ]⇓ just s
 
     s-seq :
         { stm1 stm2 : Stm} →
         { s s'' : Heap } →
         { s' : Maybe Heap} →
-        [ stm1 , s ]⟶ just s'' →
-        [ stm2 , s'' ]⟶ s' →
+        [ stm1 , s ]⇓ just s'' →
+        [ stm2 , s'' ]⇓ s' →
     ----------------------------------------------------------
-        [ seq stm1 stm2 , s ]⟶ s'
+        [ seq stm1 stm2 , s ]⇓ s'
 
     s-seq-⊥ :
         { stm1 stm2 : Stm} →
         { s s' s'' : Heap } →
-        [ stm1 , s ]⟶ exn →
+        [ stm1 , s ]⇓ exn →
     ----------------------------------------------------------
-        [ seq stm1 stm2 , s ]⟶ exn
+        [ seq stm1 stm2 , s ]⇓ exn
 
-    -- s-ite :
-    --     { b : Bexp } →
-    -- ---------------------------------------------
-    --     [ ite b stm1 stm2 , s ]⟶ s'
+    s-ite-tt :
+        { b : Bexp } →
+        { stm1 stm2 : Stm } →
+        { s : Heap } →
+        { s' : Maybe Heap } →
+        B⟦ b ⟧ s ≡ just true →
+        [ stm1 , s ]⇓ s' →
+    ----------------------------------------------------------
+        [ ite b stm1 stm2 , s ]⇓ s'
 
+    s-ite-ff :
+        { b : Bexp } →
+        { stm1 stm2 : Stm } →
+        { s : Heap } →
+        { s' : Maybe Heap } →
+        B⟦ b ⟧ s ≡ just false →
+        [ stm2 , s ]⇓ s' →
+    ----------------------------------------------------------
+        [ ite b stm1 stm2 , s ]⇓ s'
 
+    s-whiledo-true :
+        { b : Bexp } →
+        { stm : Stm } →
+        { s s'' : Heap } →
+        { s' : Maybe Heap } →
+        B⟦ b ⟧ s ≡ just true →
+        [ stm , s ]⇓ just s'' →
+        [ whiledo b stm , s'' ]⇓ s' →
+    ----------------------------------------------------------
+        [ whiledo b stm , s ]⇓ s'
 
+    s-whiledo-false :
+        { b : Bexp } →
+        { stm : Stm } →
+        { s : Heap } →
+        B⟦ b ⟧ s ≡ just false →
+    ----------------------------------------------------------
+        [ whiledo b stm , s ]⇓ just s
+
+    s-whiledo-⊥₁ :
+        { b : Bexp } →
+        { stm : Stm } →
+        { s : Heap } →
+        B⟦ b ⟧ s ≡ exn →
+    ----------------------------------------------------------
+        [ whiledo b stm , s ]⇓ exn
+
+    s-whiledo-⊥₂ :
+        { b : Bexp } →
+        { stm : Stm } →
+        { s s'' : Heap } →
+        { s' : Maybe Heap } →
+        B⟦ b ⟧ s ≡ just true →
+        [ stm , s ]⇓ exn →
+    ----------------------------------------------------------
+        [ whiledo b stm , s ]⇓ exn
