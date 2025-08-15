@@ -1,7 +1,7 @@
-open import Data.Nat
-open import Data.Integer as I
-open import Data.String renaming (_==_ to strEq)
-open import Data.Bool
+open import Data.Nat using (ℕ)
+open import Data.Integer as I using (ℤ; +_; -_)
+open import Data.String using (String) renaming (_==_ to strEq)
+open import Data.Bool using (Bool; true; false; _∧_; if_then_else_; not)
 open import Data.Empty
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import Relation.Nullary.Decidable.Core using (isYes)
@@ -9,9 +9,6 @@ open import Data.Maybe as M using (Maybe; just) renaming (nothing to exn)
 
 Num : Set
 Num = ℤ
-
-Loc : Set
-Loc = ℕ
 
 data Symbol (T : Set) : Set where
     sym : T → Symbol T
@@ -46,13 +43,31 @@ data Stm : Set where
     ite : Bexp → Stm → Stm → Stm
     whiledo : Bexp → Stm → Stm
 
+N : ℕ → Aexp
+N n = num (+ n)
+
+-N : ℕ → Aexp
+-N n = num (- (+ n))
+
+infix 1 WHILE_DO_
 WHILE_DO_ : Bexp → Stm → Stm
 WHILE b DO s = whiledo b s
 
 IF_THEN_ELSE_ : Bexp → Stm → Stm → Stm
 IF b THEN s1 ELSE s2 = ite b s1 s2
 
--- well, I would like to use semicolon, but it's special in Agda.
+_←_ : SSymbol → Aexp → Stm
+x ← e = assign x e
+
+_≟_ : Aexp → Aexp → Bexp
+a ≟ b = eq a b
+
+_≤?_ : Aexp → Aexp → Bexp
+a ≤? b = leq a b
+
+-- Sugar for sequencing.
+-- I would like to use semicolon, but it's special in Agda.
+infixr 0  _,_
 _,_ : Stm → Stm → Stm
 s1 , s2 = seq s1 s2
 
@@ -93,9 +108,6 @@ vand _ _ = exn
 -- vleq : Value → Value → Bool
 -- vleq (V x1) →
 
-V' : ℕ → Value
-V' n = (+ n)
-
 Heap : Set
 Heap = SSymbol → Value⊥
 
@@ -106,22 +118,34 @@ h [ s := v ] = λ x → if (s == x) then just v else h x
 _[_] : Heap → SSymbol → Value⊥
 h [ s ] = h s
 
-emptyHeap : Heap
-emptyHeap = λ x → exn
+σ₀ : Heap
+σ₀ = λ x → exn
 
 X : SSymbol
 X = sym "X"
 
+`X : Aexp
+`X = var X
+
 Y : SSymbol
 Y = sym "Y"
 
-testHeap1 : Heap
-testHeap1 = emptyHeap [ X := (V' 42) ]
+`Y : Aexp
+`Y = var Y
 
-test1 : emptyHeap [ X ] ≡ exn
+Z : SSymbol
+Z = sym "Z"
+
+`Z : Aexp
+`Z = var Z
+
+testHeap1 : Heap
+testHeap1 = σ₀ [ X := (+ 42) ]
+
+test1 : σ₀ [ X ] ≡ exn
 test1 = refl
 
-test2 : testHeap1 [ X ] ≡ just (V' 42)
+test2 : testHeap1 [ X ] ≡ just (+ 42)
 test2 = refl
 
 -- denotational semantics for Arithmetic expressions (Aexp)
@@ -233,3 +257,23 @@ data [_,_]⇓_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
         [ stm , s ]⇓ exn →
     ----------------------------------------------------------
         [ whiledo b stm , s ]⇓ exn
+
+prog1 : Stm
+prog1 =
+    X ← N 0 ,
+    WHILE `X ≤? N 1 DO
+        X ← (plus `X (N 1))
+
+σ-prog1 : Heap
+σ-prog1 = σ₀ [ X := (+ 0) ] [ X := (+ 1) ] [ X := (+ 2) ]
+
+exec-prog1 : [ prog1 , σ₀ ]⇓ just σ-prog1
+exec-prog1 = s-seq
+                s-assign
+                (s-whiledo-true
+                    refl
+                    s-assign
+                    (s-whiledo-true
+                        refl
+                        s-assign
+                        (s-whiledo-false refl)))
