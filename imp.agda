@@ -220,7 +220,7 @@ data [_,_]⇓_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
     ----------------------------------------------------------
         [ ite b stm1 stm2 , s ]⇓ s'
 
-    s-whiledo-true :
+    s-whiledo-tt :
         { b : Bexp } →
         { stm : Stm } →
         { s s'' : Heap } →
@@ -231,7 +231,7 @@ data [_,_]⇓_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
     ----------------------------------------------------------
         [ whiledo b stm , s ]⇓ s'
 
-    s-whiledo-false :
+    s-whiledo-ff :
         { b : Bexp } →
         { stm : Stm } →
         { s : Heap } →
@@ -269,10 +269,10 @@ prog1 =
 exec-prog1 : [ prog1 , σ₀ ]⇓ just σ-prog1
 exec-prog1 = s-seq
                 s-assign
-                (s-whiledo-true
+                (s-whiledo-tt
                     refl
                     s-assign
-                    (s-whiledo-true
+                    (s-whiledo-tt
                         refl
                         s-assign
-                        (s-whiledo-false refl)))
+                        (s-whiledo-ff refl)))
