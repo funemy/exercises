@@ -17,6 +17,7 @@ data Symbol (T : Set) : Set where
 SSymbol : Set
 SSymbol = Symbol String
 
+-- Decidable equality of symbols is the decidable equality of their underlying representation
 infix 4 _==_
 _==_ : SSymbol → SSymbol → Bool
 (sym s1) == (sym s2) = strEq s1 s2
@@ -43,6 +44,7 @@ data Stm : Set where
     ite : Bexp → Stm → Stm → Stm
     whiledo : Bexp → Stm → Stm
 
+-- Below is some syntactic sugar for the language defined above
 N : ℕ → Aexp
 N n = num (+ n)
 
@@ -71,6 +73,7 @@ infixr 0  _,_
 _,_ : Stm → Stm → Stm
 s1 , s2 = seq s1 s2
 
+-- Value is represented as numbers (i.e., integers)
 Value : Set
 Value = Num
 
@@ -105,22 +108,23 @@ vand : Maybe Bool → Maybe Bool → Maybe Bool
 vand (just b1) (just b2) = just (b1 ∧ b2)
 vand _ _ = exn
 
--- vleq : Value → Value → Bool
--- vleq (V x1) →
-
+-- Heap is represented as a function from symbols to values
 Heap : Set
 Heap = SSymbol → Value⊥
 
 -- heap update
 _[_:=_] : Heap → SSymbol → Num → Heap
 h [ s := v ] = λ x → if (s == x) then just v else h x
+
 -- heap access
 _[_] : Heap → SSymbol → Value⊥
 h [ s ] = h s
 
+-- an initial (i.e., empty) heap, where any access will leads to exceptions
 σ₀ : Heap
 σ₀ = λ x → exn
 
+-- define symbols and variables X, Y, Z to make it easier to construct examples
 X : SSymbol
 X = sym "X"
 
@@ -166,11 +170,6 @@ B⟦ lneg b ⟧ s = M.map not (B⟦ b ⟧ s)
 B⟦ land b₁ b₂ ⟧ s = vand (B⟦ b₁ ⟧ s) (B⟦ b₂ ⟧ s)
 
 -- big-step semantics for Statement (Stm)
---  assign : SSymbol → Aexp → Stm
---  skip : Stm
---  seq : Stm → Stm → Stm
---  ite : Bexp → Stm → Stm → Stm
---  whiledo : Bexp → Stm → Stm
 data [_,_]⇓_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
     s-assign :
         { s : Heap } →
