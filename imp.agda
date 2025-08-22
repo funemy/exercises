@@ -1,13 +1,14 @@
+open import Agda.Builtin.Sigma using (_,_)
 open import Data.Nat using (ℕ)
 open import Data.Integer as I using (ℤ; +_; -_)
 open import Data.String using (String) renaming (_==_ to strEq)
 open import Data.Bool using (Bool; true; false; _∧_; if_then_else_; not)
 open import Data.Empty
+open import Data.Maybe as M using (Maybe; just) renaming (nothing to exn)
+open import Data.Sum as S using (_⊎_; inj₁; inj₂)
+open import Data.Product as P using (_×_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import Relation.Nullary.Decidable.Core using (isYes)
-open import Data.Maybe as M using (Maybe; just) renaming (nothing to exn)
-open import Data.Sum as S using (_⊎_)
-open import Data.Product as P using (_×_)
 
 Num : Set
 Num = ℤ
@@ -71,9 +72,9 @@ a ≤? b = leq a b
 
 -- Sugar for sequencing.
 -- I would like to use semicolon, but it's special in Agda.
-infixr 0  _,_
-_,_ : Stm → Stm → Stm
-s1 , s2 = seq s1 s2
+infixr 0  _⨾_
+_⨾_ : Stm → Stm → Stm
+s1 ⨾ s2 = seq s1 s2
 
 -- Value is represented as numbers (i.e., integers)
 Value : Set
@@ -174,9 +175,9 @@ B⟦ land b₁ b₂ ⟧ s = vand (B⟦ b₁ ⟧ s) (B⟦ b₂ ⟧ s)
 -- big-step semantics for Statement (Stm)
 data [_,_]⇓_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
     b-assign :
-        { s : Heap } →
         { x : SSymbol } →
         { aexp : Aexp } →
+        { s : Heap } →
         let s' = M.map (λ v → s [ x := v ]) (A⟦ aexp ⟧ s) in
     ----------------------------------------------------------
         [ assign x aexp , s ]⇓ s'
@@ -270,7 +271,7 @@ data [_,_]⇓_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
 
 prog1 : Stm
 prog1 =
-    X ← N 0 ,
+    X ← N 0 ⨾
     WHILE `X ≤? N 1 DO
         X ← (plus `X (N 1))
 
@@ -292,9 +293,89 @@ StepRes : Set
 StepRes = Heap ⊎ (Stm × Heap)
 
 -- small-step semantics
+-- The small-step semantics can either step into a new heap (state) for statements
+-- like assign or skip, or step into a pair of next statement and a new state.
+-- This is defined as the type `StepRes` above, additionally, we wrap it in `Maybe`
+-- to model exceptions due to state-lookup.
 data [_,_]⟶_ : (s : Stm) → (σ : Heap) → (γ : Maybe StepRes) → Set where
-    -- s-assign : ?
-    -- s-skip : ?
-    -- s-seq : ?
-    -- s-ite : ?
-    -- s-while : ?
+    s-assign :
+        { x : SSymbol } →
+        { aexp : Aexp } →
+        { s : Heap } →
+        let s' = M.map (λ v → inj₁ (s [ x := v ]) ) (A⟦ aexp ⟧ s) in
+    -----------------------------------------------------------------
+        [ assign x aexp , s ]⟶ s'
+
+    s-skip :
+        { s : Heap } →
+    -----------------------------------------------------------------
+        [ skip , s ]⟶ just (inj₁ s)
+
+    s-seq-1 :
+        { s1 s2 s1' : Stm } →
+        { s s' : Heap } →
+        [ s1 , s ]⟶ just (inj₂ (s1' , s' )) →
+    -----------------------------------------------------------------
+        [ seq s1 s2 , s ]⟶ just (inj₂ (seq s1' s2 , s'))
+
+    s-seq-2 :
+        { s1 s2 : Stm } →
+        { s s' : Heap } →
+        [ s1 , s ]⟶ just (inj₁ s') →
+    -----------------------------------------------------------------
+        [ seq s1 s2 , s ]⟶ just (inj₂ ( s2 , s' ))
+
+    s-seq-⊥ :
+        { s1 s2 : Stm } →
+        { s : Heap } →
+        [ s1 , s ]⟶ exn →
+    -----------------------------------------------------------------
+        [ seq s1 s2 , s ]⟶ exn
+
+    s-ite-tt :
+        { b : Bexp } →
+        { s1 s2 : Stm } →
+        { s : Heap } →
+        B⟦ b ⟧ s ≡ just true →
+    -----------------------------------------------------------------
+        [ ite b s1 s2 , s ]⟶ just (inj₂ (s1 , s))
+
+    s-ite-ff :
+        { b : Bexp } →
+        { s1 s2 : Stm } →
+        { s : Heap } →
+        B⟦ b ⟧ s ≡ just false →
+    -----------------------------------------------------------------
+        [ ite b s1 s2 , s ]⟶ just (inj₂ (s2 , s))
+
+    s-ite-⊥ :
+        { b : Bexp } →
+        { s1 s2 : Stm } →
+        { s : Heap } →
+        B⟦ b ⟧ s ≡ exn →
+    -----------------------------------------------------------------
+        [ ite b s1 s2 , s ]⟶ exn
+
+    s-while-tt :
+        { b : Bexp } →
+        { stm : Stm } →
+        { s : Heap } →
+        B⟦ b ⟧ s ≡ just true →
+    ---------------------------------------------------------------------
+        [ whiledo b stm , s ]⟶ just (inj₂ (seq stm (whiledo b stm) , s))
+
+    s-while-ff :
+        { b : Bexp } →
+        { stm : Stm } →
+        { s : Heap } →
+        B⟦ b ⟧ s ≡ just false →
+    ---------------------------------------------------------------------
+        [ whiledo b stm , s ]⟶ just (inj₂ (skip , s))
+
+    s-while-⊥ :
+        { b : Bexp } →
+        { stm : Stm } →
+        { s : Heap } →
+        B⟦ b ⟧ s ≡ exn →
+    -----------------------------------------------------------------
+        [ whiledo b stm , s ]⟶ exn
