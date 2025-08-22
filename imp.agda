@@ -6,6 +6,8 @@ open import Data.Empty
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import Relation.Nullary.Decidable.Core using (isYes)
 open import Data.Maybe as M using (Maybe; just) renaming (nothing to exn)
+open import Data.Sum as S using (_⊎_)
+open import Data.Product as P using (_×_)
 
 Num : Set
 Num = ℤ
@@ -171,7 +173,7 @@ B⟦ land b₁ b₂ ⟧ s = vand (B⟦ b₁ ⟧ s) (B⟦ b₂ ⟧ s)
 
 -- big-step semantics for Statement (Stm)
 data [_,_]⇓_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
-    s-assign :
+    b-assign :
         { s : Heap } →
         { x : SSymbol } →
         { aexp : Aexp } →
@@ -179,12 +181,12 @@ data [_,_]⇓_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
     ----------------------------------------------------------
         [ assign x aexp , s ]⇓ s'
 
-    s-skip :
+    b-skip :
         { s : Heap } →
     ----------------------------------------------------------
         [ skip , s ]⇓ just s
 
-    s-seq :
+    b-seq :
         { stm1 stm2 : Stm} →
         { s s'' : Heap } →
         { s' : Maybe Heap} →
@@ -193,14 +195,14 @@ data [_,_]⇓_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
     ----------------------------------------------------------
         [ seq stm1 stm2 , s ]⇓ s'
 
-    s-seq-⊥ :
+    b-seq-⊥ :
         { stm1 stm2 : Stm} →
         { s s' s'' : Heap } →
         [ stm1 , s ]⇓ exn →
     ----------------------------------------------------------
         [ seq stm1 stm2 , s ]⇓ exn
 
-    s-ite-tt :
+    b-ite-tt :
         { b : Bexp } →
         { stm1 stm2 : Stm } →
         { s : Heap } →
@@ -210,7 +212,7 @@ data [_,_]⇓_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
     ----------------------------------------------------------
         [ ite b stm1 stm2 , s ]⇓ s'
 
-    s-ite-ff :
+    b-ite-ff :
         { b : Bexp } →
         { stm1 stm2 : Stm } →
         { s : Heap } →
@@ -220,7 +222,7 @@ data [_,_]⇓_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
     ----------------------------------------------------------
         [ ite b stm1 stm2 , s ]⇓ s'
 
-    s-ite-⊥ :
+    b-ite-⊥ :
         { b : Bexp } →
         { stm1 stm2 : Stm } →
         { s : Heap } →
@@ -229,7 +231,7 @@ data [_,_]⇓_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
     ----------------------------------------------------------
         [ ite b stm1 stm2 , s ]⇓ exn
 
-    s-whiledo-tt :
+    b-whiledo-tt :
         { b : Bexp } →
         { stm : Stm } →
         { s s'' : Heap } →
@@ -240,7 +242,7 @@ data [_,_]⇓_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
     ----------------------------------------------------------
         [ whiledo b stm , s ]⇓ s'
 
-    s-whiledo-ff :
+    b-whiledo-ff :
         { b : Bexp } →
         { stm : Stm } →
         { s : Heap } →
@@ -248,7 +250,7 @@ data [_,_]⇓_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
     ----------------------------------------------------------
         [ whiledo b stm , s ]⇓ just s
 
-    s-whiledo-⊥₁ :
+    b-whiledo-⊥₁ :
         { b : Bexp } →
         { stm : Stm } →
         { s : Heap } →
@@ -256,7 +258,7 @@ data [_,_]⇓_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
     ----------------------------------------------------------
         [ whiledo b stm , s ]⇓ exn
 
-    s-whiledo-⊥₂ :
+    b-whiledo-⊥₂ :
         { b : Bexp } →
         { stm : Stm } →
         { s s'' : Heap } →
@@ -276,12 +278,23 @@ prog1 =
 σ-prog1 = σ₀ [ X := (+ 0) ] [ X := (+ 1) ] [ X := (+ 2) ]
 
 exec-prog1 : [ prog1 , σ₀ ]⇓ just σ-prog1
-exec-prog1 = s-seq
-                s-assign
-                (s-whiledo-tt
+exec-prog1 = b-seq
+                b-assign
+                (b-whiledo-tt
                     refl
-                    s-assign
-                    (s-whiledo-tt
+                    b-assign
+                    (b-whiledo-tt
                         refl
-                        s-assign
-                        (s-whiledo-ff refl)))
+                        b-assign
+                        (b-whiledo-ff refl)))
+
+StepRes : Set
+StepRes = Heap ⊎ (Stm × Heap)
+
+-- small-step semantics
+data [_,_]⟶_ : (s : Stm) → (σ : Heap) → (γ : Maybe StepRes) → Set where
+    -- s-assign : ?
+    -- s-skip : ?
+    -- s-seq : ?
+    -- s-ite : ?
+    -- s-while : ?
