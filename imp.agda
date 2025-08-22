@@ -220,6 +220,15 @@ data [_,_]⇓_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
     ----------------------------------------------------------
         [ ite b stm1 stm2 , s ]⇓ s'
 
+    s-ite-⊥ :
+        { b : Bexp } →
+        { stm1 stm2 : Stm } →
+        { s : Heap } →
+        { s' : Maybe Heap } →
+        B⟦ b ⟧ s ≡ exn →
+    ----------------------------------------------------------
+        [ ite b stm1 stm2 , s ]⇓ exn
+
     s-whiledo-tt :
         { b : Bexp } →
         { stm : Stm } →
