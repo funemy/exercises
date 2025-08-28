@@ -498,10 +498,7 @@ dseq-sugared-prog1 =
 -- In pen-and-paper proof, I suppose the order is more commonly flipped,
 -- as in you first apply the induction principle of derivation tree, then
 -- case-splitting on statements.
-[∙,∙]⇓∙-implies-[∙,∙]⟶*∙ :
-    ∀ (stm : Stm) (σ σ' : Heap) →
-    [ stm , σ ]⇓ just σ' →
-    [ stm , σ ]⟶* σ'
+[∙,∙]⇓∙-implies-[∙,∙]⟶*∙ : ∀ (stm : Stm) (σ σ' : Heap) → [ stm , σ ]⇓ just σ' → [ stm , σ ]⟶* σ'
 [∙,∙]⇓∙-implies-[∙,∙]⟶*∙ (assign x aexp) σ σ' (b-assign x₁) = dseq-id (s-assign x₁)
 [∙,∙]⇓∙-implies-[∙,∙]⟶*∙ skip σ σ' b-skip = dseq-id s-skip
 [∙,∙]⇓∙-implies-[∙,∙]⟶*∙ (seq stm1 stm2) σ σ' (b-seq {σ'' = σ''} deriv1 deriv2) =
