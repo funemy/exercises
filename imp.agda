@@ -1,3 +1,6 @@
+-- For infinite derivation sequences
+{-# OPTIONS --guardedness #-}
+
 open import Agda.Builtin.Sigma using (_,_)
 open import Data.Nat using (ℕ)
 open import Data.Integer as I using (ℤ; +_; -_)
@@ -149,11 +152,11 @@ Z = sym "Z"
 testHeap1 : Heap
 testHeap1 = σ₀ [ X := (+ 42) ]
 
-test1 : σ₀ [ X ] ≡ exn
-test1 = refl
+_ : σ₀ [ X ] ≡ exn
+_ = refl
 
-test2 : testHeap1 [ X ] ≡ just (+ 42)
-test2 = refl
+_ : testHeap1 [ X ] ≡ just (+ 42)
+_ = refl
 
 -- denotational semantics for Arithmetic expressions (Aexp)
 A⟦_⟧_ : Aexp → Heap → Value⊥
@@ -269,26 +272,6 @@ data [_,_]⇓_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
     ----------------------------------------------------------
         [ whiledo b stm , s ]⇓ exn
 
-prog1 : Stm
-prog1 =
-    X ← N 0 ⨾
-    WHILE `X ≤? N 1 DO
-        X ← (plus `X (N 1))
-
-σ-prog1 : Heap
-σ-prog1 = σ₀ [ X := (+ 0) ] [ X := (+ 1) ] [ X := (+ 2) ]
-
-exec-prog1 : [ prog1 , σ₀ ]⇓ just σ-prog1
-exec-prog1 = b-seq
-                b-assign
-                (b-whiledo-tt
-                    refl
-                    b-assign
-                    (b-whiledo-tt
-                        refl
-                        b-assign
-                        (b-whiledo-ff refl)))
-
 StepRes : Set
 StepRes = Heap ⊎ (Stm × Heap)
 
@@ -297,7 +280,7 @@ StepRes = Heap ⊎ (Stm × Heap)
 -- like assign or skip, or step into a pair of next statement and a new state.
 -- This is defined as the type `StepRes` above, additionally, we wrap it in `Maybe`
 -- to model exceptions due to state-lookup.
-data [_,_]⟶_ : (s : Stm) → (σ : Heap) → (γ : Maybe StepRes) → Set where
+data [_,_]⟶_ : (stm : Stm) → (σ : Heap) → (γ : Maybe StepRes) → Set where
     s-assign :
         { x : SSymbol } →
         { aexp : Aexp } →
@@ -379,3 +362,105 @@ data [_,_]⟶_ : (s : Stm) → (σ : Heap) → (γ : Maybe StepRes) → Set wher
         B⟦ b ⟧ s ≡ exn →
     -----------------------------------------------------------------
         [ whiledo b stm , s ]⟶ exn
+
+-- derivation sequence (finite)
+data [_,_]⟶*_ : (stm : Stm) → (σ : Heap) → (σ' : Heap) → Set where
+    dseq-id :
+        { stm : Stm } →
+        { σ σ' : Heap } →
+        [ stm , σ ]⟶ just (inj₁ σ') →
+    -----------------------------------------------------------------
+        [ stm , σ ]⟶* σ'
+
+    dseq-cons :
+        { stm stm' : Stm } →
+        { σ σ' σ'' : Heap } →
+        [ stm , σ ]⟶ just (inj₂ (stm' , σ'' )) →
+        [ stm' , σ'' ]⟶* σ' →
+    -----------------------------------------------------------------
+        [ stm , σ ]⟶* σ'
+
+-- some sugar for composing the derivation sequence
+infixr -20 _::⟶⟨_⟩_
+_::⟶⟨_⟩_ :
+    { stm stm' : Stm } →
+    ( σ : Heap ) →
+    { σ'' σ' : Heap } →
+    ( step : [ stm , σ ]⟶ just (inj₂ (stm' , σ'' )) ) →
+    ( rest : [ stm' , σ'' ]⟶* σ' ) →
+    [ stm , σ ]⟶* σ'
+(_::⟶⟨_⟩_) {stm} σ {σ''} {σ'} step rest = dseq-cons step rest
+
+helper-dseq-id :
+    { stm : Stm } →
+    ( σ : Heap ) →
+    ( σ' : Heap ) →
+    ( step : [ stm , σ ]⟶ just (inj₁ σ') ) →
+    [ stm , σ ]⟶* σ'
+helper-dseq-id {stm} σ σ' step = dseq-id step
+
+infix -19 helper-dseq-id
+syntax helper-dseq-id σ σ' step = σ ::⟶⟨ step ⟩∎ σ'
+
+_ : [ skip , σ₀ ]⟶* σ₀
+_ = σ₀ ::⟶⟨ s-skip ⟩∎ σ₀
+
+_ : [ skip ⨾ skip , σ₀ ]⟶* σ₀
+_ = σ₀ ::⟶⟨ s-seq-2 s-skip ⟩
+    σ₀ ::⟶⟨ s-skip ⟩∎
+    σ₀
+
+-- an example program
+prog1 : Stm
+prog1 =
+    X ← N 0 ⨾
+    WHILE `X ≤? N 1 DO
+        X ← (plus `X (N 1))
+
+-- the expected final program state when prog1 terminates
+σ-prog1 : Heap
+σ-prog1 = σ₀ [ X := (+ 0) ] [ X := (+ 1) ] [ X := (+ 2) ]
+
+-- execution of prog1 using big-step semantics
+exec-prog1 : [ prog1 , σ₀ ]⇓ just σ-prog1
+exec-prog1 = b-seq
+                b-assign
+                (b-whiledo-tt
+                    refl
+                    b-assign
+                    (b-whiledo-tt
+                        refl
+                        b-assign
+                        (b-whiledo-ff refl)))
+
+-- this is a completely non-sugared version
+dseq-prog1 : [ prog1 , σ₀ ]⟶* σ-prog1
+dseq-prog1 = dseq-cons
+                (s-seq-2 s-assign)
+                (dseq-cons
+                    (s-while-tt refl)
+                    (dseq-cons
+                        (s-seq-2 s-assign)
+                        (dseq-cons
+                            (s-while-tt refl)
+                            (dseq-cons
+                                (s-seq-2 s-assign)
+                                (dseq-cons
+                                    (s-while-ff refl)
+                                    (dseq-id s-skip))))))
+
+dseq-sugared-prog1 : [ prog1 , σ₀ ]⟶* σ-prog1
+dseq-sugared-prog1 =
+    σ₀ ::⟶⟨ s-seq-2 s-assign ⟩
+    σ₀ [ X := (+ 0) ] ::⟶⟨ s-while-tt refl ⟩
+    σ₀ [ X := (+ 0) ] ::⟶⟨ s-seq-2 s-assign ⟩
+    σ₀ [ X := (+ 0) ] [ X := (+ 1) ] ::⟶⟨ s-while-tt refl ⟩
+    σ₀ [ X := (+ 0) ] [ X := (+ 1) ] ::⟶⟨ s-seq-2 s-assign ⟩
+    σ₀ [ X := (+ 0) ] [ X := (+ 1) ] [ X := (+ 2) ] ::⟶⟨ s-while-ff refl ⟩
+    σ₀ [ X := (+ 0) ] [ X := (+ 1) ] [ X := (+ 2) ] ::⟶⟨ s-skip ⟩∎
+    σ₀ [ X := (+ 0) ] [ X := (+ 1) ] [ X := (+ 2) ]
+
+-- record [_,_]⟶_ (stm : Stm) (σᵢ : Heap) (σ : Heap) : Set where
+--     coinductive
+--     field
+--         trace :
