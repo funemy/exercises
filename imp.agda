@@ -180,97 +180,104 @@ data [_,_]⇓_ : (s : Stm) → (σ : Heap) → (σ' : Maybe Heap) → Set where
     b-assign :
         { x : SSymbol } →
         { aexp : Aexp } →
-        { s : Heap } →
-        let s' = M.map (λ v → s [ x := v ]) (A⟦ aexp ⟧ s) in
+        { σ : Heap } →
+        { v : Value } →
+        A⟦ aexp ⟧ σ ≡ just v →
     ----------------------------------------------------------
-        [ assign x aexp , s ]⇓ s'
+        [ assign x aexp , σ ]⇓ just (σ [ x := v ])
+
+    b-assign-⊥ :
+        { x : SSymbol } →
+        { aexp : Aexp } →
+        { σ : Heap } →
+        A⟦ aexp ⟧ σ ≡ exn →
+    ----------------------------------------------------------
+        [ assign x aexp , σ ]⇓ exn
 
     b-skip :
-        { s : Heap } →
+        { σ : Heap } →
     ----------------------------------------------------------
-        [ skip , s ]⇓ just s
+        [ skip , σ ]⇓ just σ
 
     b-seq :
         { stm1 stm2 : Stm} →
-        { s s'' : Heap } →
-        { s' : Maybe Heap} →
-        [ stm1 , s ]⇓ just s'' →
-        [ stm2 , s'' ]⇓ s' →
+        { σ σ'' : Heap } →
+        { σ'⊥ : Maybe Heap} →
+        [ stm1 , σ ]⇓ just σ'' →
+        [ stm2 , σ'' ]⇓ σ'⊥ →
     ----------------------------------------------------------
-        [ seq stm1 stm2 , s ]⇓ s'
+        [ seq stm1 stm2 , σ ]⇓ σ'⊥
 
     b-seq-⊥ :
         { stm1 stm2 : Stm} →
-        { s s' s'' : Heap } →
-        [ stm1 , s ]⇓ exn →
+        { σ : Heap } →
+        [ stm1 , σ ]⇓ exn →
     ----------------------------------------------------------
-        [ seq stm1 stm2 , s ]⇓ exn
+        [ seq stm1 stm2 , σ ]⇓ exn
 
     b-ite-tt :
         { b : Bexp } →
         { stm1 stm2 : Stm } →
-        { s : Heap } →
-        { s' : Maybe Heap } →
-        B⟦ b ⟧ s ≡ just true →
-        [ stm1 , s ]⇓ s' →
+        { σ : Heap } →
+        { σ'⊥ : Maybe Heap } →
+        B⟦ b ⟧ σ ≡ just true →
+        [ stm1 , σ ]⇓ σ'⊥ →
     ----------------------------------------------------------
-        [ ite b stm1 stm2 , s ]⇓ s'
+        [ ite b stm1 stm2 , σ ]⇓ σ'⊥
 
     b-ite-ff :
         { b : Bexp } →
         { stm1 stm2 : Stm } →
-        { s : Heap } →
-        { s' : Maybe Heap } →
-        B⟦ b ⟧ s ≡ just false →
-        [ stm2 , s ]⇓ s' →
+        { σ : Heap } →
+        { σ'⊥ : Maybe Heap } →
+        B⟦ b ⟧ σ ≡ just false →
+        [ stm2 , σ ]⇓ σ'⊥ →
     ----------------------------------------------------------
-        [ ite b stm1 stm2 , s ]⇓ s'
+        [ ite b stm1 stm2 , σ ]⇓ σ'⊥
 
     b-ite-⊥ :
         { b : Bexp } →
         { stm1 stm2 : Stm } →
-        { s : Heap } →
-        { s' : Maybe Heap } →
-        B⟦ b ⟧ s ≡ exn →
+        { σ : Heap } →
+        B⟦ b ⟧ σ ≡ exn →
     ----------------------------------------------------------
-        [ ite b stm1 stm2 , s ]⇓ exn
+        [ ite b stm1 stm2 , σ ]⇓ exn
 
     b-whiledo-tt :
         { b : Bexp } →
         { stm : Stm } →
-        { s s'' : Heap } →
-        { s' : Maybe Heap } →
-        B⟦ b ⟧ s ≡ just true →
-        [ stm , s ]⇓ just s'' →
-        [ whiledo b stm , s'' ]⇓ s' →
+        { σ σ'' : Heap } →
+        { σ'⊥ : Maybe Heap } →
+        B⟦ b ⟧ σ ≡ just true →
+        [ stm , σ ]⇓ just σ'' →
+        [ whiledo b stm , σ'' ]⇓ σ'⊥ →
     ----------------------------------------------------------
-        [ whiledo b stm , s ]⇓ s'
+        [ whiledo b stm , σ ]⇓ σ'⊥
 
     b-whiledo-ff :
         { b : Bexp } →
         { stm : Stm } →
-        { s : Heap } →
-        B⟦ b ⟧ s ≡ just false →
+        { σ : Heap } →
+        B⟦ b ⟧ σ ≡ just false →
     ----------------------------------------------------------
-        [ whiledo b stm , s ]⇓ just s
+        [ whiledo b stm , σ ]⇓ just σ
 
     b-whiledo-⊥₁ :
         { b : Bexp } →
         { stm : Stm } →
-        { s : Heap } →
-        B⟦ b ⟧ s ≡ exn →
+        { σ : Heap } →
+        B⟦ b ⟧ σ ≡ exn →
     ----------------------------------------------------------
-        [ whiledo b stm , s ]⇓ exn
+        [ whiledo b stm , σ ]⇓ exn
 
     b-whiledo-⊥₂ :
         { b : Bexp } →
         { stm : Stm } →
-        { s s'' : Heap } →
-        { s' : Maybe Heap } →
-        B⟦ b ⟧ s ≡ just true →
-        [ stm , s ]⇓ exn →
+        { σ : Heap } →
+        B⟦ b ⟧ σ ≡ just true →
+        [ stm , σ ]⇓ exn →
     ----------------------------------------------------------
-        [ whiledo b stm , s ]⇓ exn
+        [ whiledo b stm , σ ]⇓ exn
 
 StepRes : Set
 StepRes = Heap ⊎ (Stm × Heap)
@@ -285,9 +292,19 @@ data [_,_]⟶_ : (stm : Stm) → (σ : Heap) → (γ : Maybe StepRes) → Set wh
         { x : SSymbol } →
         { aexp : Aexp } →
         { s : Heap } →
-        let s' = M.map (λ v → inj₁ (s [ x := v ]) ) (A⟦ aexp ⟧ s) in
+        { v : Value } →
+        A⟦ aexp ⟧ s ≡ just v →
     -----------------------------------------------------------------
-        [ assign x aexp , s ]⟶ s'
+        [ assign x aexp , s ]⟶ just (inj₁ (s [ x := v ]))
+
+    s-assign-⊥ :
+        { x : SSymbol } →
+        { aexp : Aexp } →
+        { s : Heap } →
+        { v : Value } →
+        A⟦ aexp ⟧ s ≡ exn →
+    -----------------------------------------------------------------
+        [ assign x aexp , s ]⟶ exn
 
     s-skip :
         { s : Heap } →
@@ -402,6 +419,18 @@ helper-dseq-id {stm} σ σ' step = dseq-id step
 infix -19 helper-dseq-id
 syntax helper-dseq-id σ σ' step = σ ::⟶⟨ step ⟩∎ σ'
 
+-- composing two derivation sequences
+dseq∘ :
+    { stm1 stm2 : Stm } →
+    { σ σ' σ'' : Heap } →
+    (deriv1 : [ stm1 , σ ]⟶* σ') →
+    (deriv2 : [ stm2 , σ' ]⟶* σ'') →
+    [ stm1 ⨾ stm2 , σ ]⟶* σ''
+dseq∘ (dseq-id step) deriv2 = dseq-cons (s-seq-2 step) deriv2
+dseq∘ (dseq-cons step deriv1) deriv2 =
+    let tail = dseq∘ deriv1 deriv2 in
+    dseq-cons (s-seq-1 step) tail
+
 _ : [ skip , σ₀ ]⟶* σ₀
 _ = σ₀ ::⟶⟨ s-skip ⟩∎ σ₀
 
@@ -424,41 +453,72 @@ prog1 =
 -- execution of prog1 using big-step semantics
 exec-prog1 : [ prog1 , σ₀ ]⇓ just σ-prog1
 exec-prog1 = b-seq
-                b-assign
+                (b-assign refl)
                 (b-whiledo-tt
                     refl
-                    b-assign
+                    (b-assign refl)
                     (b-whiledo-tt
                         refl
-                        b-assign
+                        (b-assign refl)
                         (b-whiledo-ff refl)))
 
 -- this is a completely non-sugared version
 dseq-prog1 : [ prog1 , σ₀ ]⟶* σ-prog1
 dseq-prog1 = dseq-cons
-                (s-seq-2 s-assign)
+                (s-seq-2 (s-assign refl))
                 (dseq-cons
                     (s-while-tt refl)
                     (dseq-cons
-                        (s-seq-2 s-assign)
+                        (s-seq-2 (s-assign refl))
                         (dseq-cons
                             (s-while-tt refl)
                             (dseq-cons
-                                (s-seq-2 s-assign)
+                                (s-seq-2 (s-assign refl))
                                 (dseq-cons
                                     (s-while-ff refl)
                                     (dseq-id s-skip))))))
 
+-- describing the derivation sequence of prog1's small-step intepretation using the syntactic sugar defined above
 dseq-sugared-prog1 : [ prog1 , σ₀ ]⟶* σ-prog1
 dseq-sugared-prog1 =
-    σ₀ ::⟶⟨ s-seq-2 s-assign ⟩
+    σ₀ ::⟶⟨ s-seq-2 (s-assign refl) ⟩
     σ₀ [ X := (+ 0) ] ::⟶⟨ s-while-tt refl ⟩
-    σ₀ [ X := (+ 0) ] ::⟶⟨ s-seq-2 s-assign ⟩
+    σ₀ [ X := (+ 0) ] ::⟶⟨ s-seq-2 (s-assign refl) ⟩
     σ₀ [ X := (+ 0) ] [ X := (+ 1) ] ::⟶⟨ s-while-tt refl ⟩
-    σ₀ [ X := (+ 0) ] [ X := (+ 1) ] ::⟶⟨ s-seq-2 s-assign ⟩
+    σ₀ [ X := (+ 0) ] [ X := (+ 1) ] ::⟶⟨ s-seq-2 (s-assign refl) ⟩
     σ₀ [ X := (+ 0) ] [ X := (+ 1) ] [ X := (+ 2) ] ::⟶⟨ s-while-ff refl ⟩
     σ₀ [ X := (+ 0) ] [ X := (+ 1) ] [ X := (+ 2) ] ::⟶⟨ s-skip ⟩∎
     σ₀ [ X := (+ 0) ] [ X := (+ 1) ] [ X := (+ 2) ]
+
+-- For any big-step intepretation that doesn't raise exceptions,
+-- there is a corresponding small-step derivation sequence.
+-- Proof sketch:
+--    1. first case-splitting on statements (Stm) of IMP
+--    2. then doing induction on big-step derivation
+-- In pen-and-paper proof, I suppose the order is more commonly flipped,
+-- as in you first apply the induction principle of derivation tree, then
+-- case-splitting on statements.
+[∙,∙]⇓∙-implies-[∙,∙]⟶*∙ :
+    ∀ (stm : Stm) (σ σ' : Heap) →
+    [ stm , σ ]⇓ just σ' →
+    [ stm , σ ]⟶* σ'
+[∙,∙]⇓∙-implies-[∙,∙]⟶*∙ (assign x aexp) σ σ' (b-assign x₁) = dseq-id (s-assign x₁)
+[∙,∙]⇓∙-implies-[∙,∙]⟶*∙ skip σ σ' b-skip = dseq-id s-skip
+[∙,∙]⇓∙-implies-[∙,∙]⟶*∙ (seq stm1 stm2) σ σ' (b-seq {σ'' = σ''} deriv1 deriv2) =
+    let sub-dseq1 = [∙,∙]⇓∙-implies-[∙,∙]⟶*∙ stm1 σ σ'' deriv1 in
+    let sub-dseq2 = [∙,∙]⇓∙-implies-[∙,∙]⟶*∙ stm2 σ'' σ' deriv2 in
+    dseq∘ sub-dseq1 sub-dseq2
+[∙,∙]⇓∙-implies-[∙,∙]⟶*∙ (ite x stm1 stm2) σ σ' (b-ite-tt b deriv) =
+    let sub-dseq = [∙,∙]⇓∙-implies-[∙,∙]⟶*∙ stm1 σ σ' deriv in
+    dseq-cons (s-ite-tt b) sub-dseq
+[∙,∙]⇓∙-implies-[∙,∙]⟶*∙ (ite x stm1 stm2) σ σ' (b-ite-ff b deriv) =
+    let sub-dseq = [∙,∙]⇓∙-implies-[∙,∙]⟶*∙ stm2 σ σ' deriv in
+    dseq-cons (s-ite-ff b) sub-dseq
+[∙,∙]⇓∙-implies-[∙,∙]⟶*∙ (whiledo pred stm) σ σ' (b-whiledo-tt {σ'' = σ''} pred/tt deriv/stm deriv/while) =
+    let sub-dseq/stm = [∙,∙]⇓∙-implies-[∙,∙]⟶*∙ stm σ σ'' deriv/stm in
+    let sub-dseq/while = [∙,∙]⇓∙-implies-[∙,∙]⟶*∙ (whiledo pred stm) σ'' σ' deriv/while in
+    dseq-cons (s-while-tt pred/tt) (dseq∘ sub-dseq/stm sub-dseq/while)
+[∙,∙]⇓∙-implies-[∙,∙]⟶*∙ (whiledo pred stm) σ σ' (b-whiledo-ff pred/ff) = dseq-cons (s-while-ff pred/ff) (dseq-id s-skip)
 
 -- record [_,_]⟶_ (stm : Stm) (σᵢ : Heap) (σ : Heap) : Set where
 --     coinductive
