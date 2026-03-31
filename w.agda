@@ -8,7 +8,7 @@ open import Data.Empty using (⊥)
 open import Data.Unit using (⊤; tt)
 
 -- A polynomial functor
--- Intuitition:
+-- Intuition:
 --  This can be viewed as a tree, where you have `P .Pos` kinds of branches,
 --   each with a branching factor of `P .Dir`.
 --  So `.Pos` describes constructors and non-recursive arguments,
