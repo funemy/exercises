@@ -4,10 +4,9 @@ module Cata where
 -- This definition can be found in Data.Fix package
 -- The difference between Fix and Mu is that
 -- Mu encode a inductive type directly as its fold
--- Therefore it's the least-fixpoint?
--- This encoding of Mu is isomorphic to Fix
+-- Therefore it only represents the least fixed-point.
 --
--- **Is this also the tagless-final or codata encoding?
+-- Whereas in Haskell, due to Laziness, Fix actually contains both least and greatest fixed-points
 newtype Mu f = In { unIn :: forall a . (f a -> a) -> a }
 
 data ListF a b = NilF | ConsF a b
