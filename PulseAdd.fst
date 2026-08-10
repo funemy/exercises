@@ -12,6 +12,7 @@ module U64 = FStar.UInt64
 module TU = Pulse.Lib.Trade.Util
 
 fn add (x y: ref U64.t) (#c: slprop)
+  // requires pts_to y 'y ** (pts_to y 'y ==>* (pts_to x 'x ** c))
   requires pts_to y 'y ** (pts_to y 'y @==> (pts_to x 'x ** c))
   ensures  pts_to x ('x +%^ 'y) ** c
 {
